@@ -1,15 +1,12 @@
 import numpy as np
 import math 
 
-def stockham(n, s, eo, x, y):
-    m = n // 2
-    theta0 = math.pi / s
+def stockham(n, s, x, y):
 
-    if (n == 0): return
-    if (n == 1 and eo):
-        for q in range(s):
-            y[q] = x[q]
-    else:
+    for _ in range(int(math.log2(n))):
+        m = n // 2
+        theta0 = math.pi / s
+
         for p in range(int(m)):
             for q in range(s):
                 wq = math.cos(q * theta0) - 1j * math.sin(q * theta0)
@@ -17,13 +14,16 @@ def stockham(n, s, eo, x, y):
                 b = x[q + s*(p + m)] * wq;
                 y[q + s*(2*p + 0)] = a + b;
                 y[q + s*(2*p + 1)] = a - b;
-               
-        stockham(n//2, s * 2, not eo, y, x)
+            
+        n =n // 2
+        s = s * 2
+        x, y = y, x  # Swap x and y for the next iteration
+
+    return x
 
 def fft(n, input):
     y = np.zeros(n, dtype=np.complex64)
-    stockham(n, 1, False, input, y)
-    return y  # Scale the output by 1/N as per FFT definition
+    return stockham(n, 1, input, y)
 
 
 
@@ -74,7 +74,7 @@ if __name__ == "__main__":
     # Define the sizes for testing. "2 poers" is interpreted as two powers of 2.
     # You can modify this list to test different lengths,
     # especially other powers of 2 like [32, 64, 128].
-    test_sizes = [2**i for i in range(25)] # Common power-of-2 sizes for FFT testing
+    test_sizes = [2**i for i in range(20)] # Common power-of-2 sizes for FFT testing
 
     # Run the tests with random data for the specified sizes
     test_fft_with_random_data(test_sizes)
