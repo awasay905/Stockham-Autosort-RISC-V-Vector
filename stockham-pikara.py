@@ -1,10 +1,12 @@
 import numpy as np
 import math 
 
-def stockham(n, s, x, y):
+def stockham_fft(n, x):
+    y = np.zeros(n, dtype=np.complex64)
+    s = 1
+    m = n // 2
 
     for _ in range(int(math.log2(n))):
-        m = n // 2
         theta0 = math.pi / s
 
         for p in range(int(m)):
@@ -15,16 +17,12 @@ def stockham(n, s, x, y):
                 y[q + s*(2*p + 0)] = a + b;
                 y[q + s*(2*p + 1)] = a - b;
             
-        n =n // 2
+        n = n // 2
+        m = m // 2
         s = s * 2
         x, y = y, x  # Swap x and y for the next iteration
 
     return x
-
-def fft(n, input):
-    y = np.zeros(n, dtype=np.complex64)
-    return stockham(n, 1, input, y)
-
 
 
 def test_fft_with_random_data(sizes):
@@ -51,7 +49,7 @@ def test_fft_with_random_data(sizes):
         print(f"Numpy FFT output (first 5 elements): {numpy_fft_output[:min(5, N)]}{'...' if N > 5 else ''}")
 
         # Compute FFT using the provided (your) function
-        custom_fft_output = fft(N, random_input) # Pass the original complex64 input
+        custom_fft_output = stockham_fft(N, random_input) # Pass the original complex64 input
         print(f"Custom FFT output (first 5 elements): {custom_fft_output[:min(5, N)]}{'...' if N > 5 else ''}")
 
         # Compare the results using np.allclose for floating-point accuracy.
