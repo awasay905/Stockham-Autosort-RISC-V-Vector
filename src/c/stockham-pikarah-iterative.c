@@ -62,6 +62,7 @@ void stockham_fft(int n, float* x_re, float* x_im, float* y_re, float* y_im) {
     float* current_y_im = y_im;
 
     for (int stage = 0; stage < log2_n; ++stage) {
+        printf("Stage %d: m = %d, s = %d\n", stage, m, s);
         // Calculate the scaling factor to map 'q' to the precomputed twiddle table index.
         // The angle in the inner loop is `q * PI / s`.
         // The table is precomputed for `k * PI / TWIDDLE_TABLE_SIZE`.
@@ -69,12 +70,14 @@ void stockham_fft(int n, float* x_re, float* x_im, float* y_re, float* y_im) {
         int twiddle_scale = TWIDDLE_TABLE_SIZE / s;
 
         for (int p = 0; p < m; ++p) {
+            int sp = s * p;
+            int spm = sp + s*m;
             for (int q = 0; q < s; ++q) {
                 // Calculate input indices for 'a' and 'b'
                 // 'a' is from the first half of the current block
                 // 'b' is from the second half, 'm' sub-blocks away
-                int idx_a = q + s * p;
-                int idx_b = q + s * (p + m);
+                int idx_a = q + sp;
+                int idx_b = q + spm;
 
                 // Get the twiddle factor from the precomputed table
                 int tw_idx = q * twiddle_scale;
@@ -96,8 +99,8 @@ void stockham_fft(int n, float* x_re, float* x_im, float* y_re, float* y_im) {
 
                 // Calculate output indices for y[q + s*(2*p + 0)] and y[q + s*(2*p + 1)]
                 // This interleaves the results of the butterflies
-                int idx_y0 = q + s * (2 * p + 0); // For a + b_wq
-                int idx_y1 = q + s * (2 * p + 1); // For a - b_wq
+                int idx_y0 = q + 2*sp; // For a + b_wq
+                int idx_y1 = q + 2*sp + s; // For a - b_wq
 
                 // Write results to the current output buffer 'y'
                 current_y_re[idx_y0] = a_re + b_wq_re;
