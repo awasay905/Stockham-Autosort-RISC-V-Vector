@@ -1,172 +1,236 @@
+import math 
 import numpy as np
-import cmath
 
-# Core recursive Stockham FFT function
-def fft0_py_corrected(n: int, s: int, eo: bool, x: np.ndarray, y: np.ndarray):
+def format_array_as_data_string(data: list[float], num_group_size: int = 4, num_per_line: int = 32) -> list[str]:
     """
-    Recursive core of the Stockham FFT.
+    Format a list of floats into assembly directives for a `.float` statement.
 
-    n (int): Current size of the FFT block.
-    s (int): Stride for accessing elements.
-    eo (bool): Flag indicating buffer roles. If True, y becomes the output buffer
-               and x becomes the input buffer for the *next* recursive stage.
-               Also used in the base case to determine if a copy is needed.
-               For the current stage (in this function call), x is the output, y is the input.
-    x (np.ndarray): The NumPy array designated as the output buffer for the current stage.
-    y (np.ndarray): The NumPy array designated as the input buffer for the current stage.
+    Each float is formatted to 12 decimal places and grouped with extra spacing.
     """
-    m = n // 2
-    theta0 = 2 * np.pi / n
+    formatted_lines = []
+    current_line = ".float "
+    for i, value in enumerate(data):
+        current_line += f"{value:.12f}, "
+        if (i + 1) % num_group_size == 0:  # Add space after every (num_group_size)th number
+            current_line += " "
+        if (i + 1) % num_per_line == 0:  # New line after every (num_per_line) numbers
+            formatted_lines.append(current_line.strip(", "))
+            current_line = ".float "
+    # Add remaining line if not exactly multiple of (num_per_line)
+    if current_line.strip(", "):
+        formatted_lines.append(current_line.strip(", "))
+    return formatted_lines
 
-    if n == 1:
-        # Base case: If eo is True, it implies that 'x' (the current output buffer)
-        # needs to be populated from 'y' (the current input buffer) because
-        # 'y' holds the actual data for this 1-point FFT.
-        # If eo is False, 'x' already contains the correct value.
-        if eo:
-            x[:s] = y[:s]
-        return
-    else:
-        # Recursive step: The buffers' roles are swapped for the next level.
-        # The current 'y' becomes the output buffer for the sub-problem,
-        # and the current 'x' becomes the input buffer for the sub-problem.
-        # The 'eo' flag is toggled for the next recursion depth.
-        fft0_py_corrected(n // 2, 2 * s, not eo, y, x)
 
-        # Butterfly operation: Reads from y (input for current stage), writes to x (output for current stage)
-        for p in range(m):
-            # Twiddle factor: exp(-2*pi*i*p/n)
-            wp = cmath.cos(p * theta0) - 1j * cmath.sin(p * theta0)
-            for q in range(s):
-                # Calculate indices for reading from y (input)
-                idx_y0 = q + s * (2 * p + 0)
-                idx_y1 = q + s * (2 * p + 1)
 
-                # Calculate indices for writing to x (output)
-                idx_x0 = q + s * (p + 0)
-                idx_x1 = q + s * (p + m)
 
-                a = y[idx_y0]
-                b = y[idx_y1] * wp
+def hex_to_float(hex_array: list[str]) -> list[float]:
+    import struct
+    float_array = []
 
-                x[idx_x0] = a + b
-                x[idx_x1] = a - b
+    for hex_str in hex_array:
+        # Ensure the hex string is exactly 8 characters long
+        if len(hex_str) != 8:
+            raise ValueError(
+                f"Hex string '{hex_str}' is not 8 characters long")
 
-# Forward FFT wrapper
-def fft_py(x_in: np.ndarray) -> np.ndarray:
+        # Convert the hex string to a 32-bit integer
+        int_val = int(hex_str, 16)
+
+        # Pack the integer as a 32-bit unsigned integer
+        packed_val = struct.pack('>I', int_val)
+
+        # Unpack as a float (IEEE 754)
+        float_val = struct.unpack('>f', packed_val)[0]
+
+        float_array.append(float_val)
+
+    return float_array
+
+
+def find_log_pattern_index(file_name: str) -> list[int]:
     """
-    Performs the forward FFT using the Stockham algorithm.
-    The result is scaled by 1/N, as per the original C++ code's `fft` function.
+    Locate the starting line indices where a specific hexadecimal log pattern occurs twice in a file.
 
-    x_in (np.ndarray): Input signal (complex numbers).
-    Returns (np.ndarray): The FFT of the input signal, scaled by 1/N.
+    The function searches for the pattern defined by a set of required hexadecimal values.
+
+    Parameters
+    ----------
+    file_name : str
+        Path to the log file.
+
+    Returns
+    -------
+    list of int
+        A list containing up to two line indices where the pattern starts.
     """
-    n = len(x_in)
-    # 'x_out' will be the final output buffer, initially empty (zeros).
-    x_out = np.zeros(n, dtype=np.complex128)
-    # 'y_in' will be the initial input buffer for fft0, loaded with the actual data.
-    y_in = np.array(x_in, dtype=np.complex128)
+    with open(file_name, 'r') as file:
+        lines = file.readlines()
 
-    # Initial call to fft0_py_corrected:
-    # x_out is the designated output buffer, y_in is the designated input buffer (holding the data).
-    # 'eo' starts as False.
-    fft0_py_corrected(n, 1, False, x_out, y_in)
+    # List of required values in the 7th column
+    required_values = ["00000123", "00000456"]
+    found_values = []  # List to track when we find the required values
+    pattern_indices = []  # To store the line index when the full pattern is found
+    current_pattern_start = None  # To store where a potential pattern starts
 
-    # Apply final scaling as per the C++ `fft` function
-    return x_out / n
+    for i, line in enumerate(lines):
+        columns = line.split()
+        if len(columns) > 6:  # Check if there are enough columns
+            value = columns[6]  # Get the 7th column (index 6)
+            if value in required_values:
+                if current_pattern_start is None and value == required_values[0]:
+                    current_pattern_start = i  # Start tracking pattern from this line
+                found_values.append(value)
 
-# Inverse FFT wrapper
-def ifft_py(x_in: np.ndarray) -> np.ndarray:
+            # If we found all the required values, save the index and reset
+            if all(val in found_values for val in required_values):
+                pattern_indices.append(current_pattern_start)
+                found_values = []  # Reset for the next pattern
+                current_pattern_start = None  # Reset pattern start
+
+            # If we've found the pattern twice, we can stop
+            if len(pattern_indices) == 2:
+                break
+
+    # Return the line indices where the pattern was found twice
+    return pattern_indices
+
+
+
+
+def process_file(file_name: str, delete_log_files: bool = False) -> np.ndarray:
     """
-    Performs the inverse FFT using the Stockham algorithm.
-    It implements the property IFFT(X) = CONJ(FFT(CONJ(X))).
-    The scaling factor implicitly aligns with the `fft_py` function.
+    Process a log file to extract complex numbers represented by separate real and imaginary hex strings.
 
-    x_in (np.ndarray): Input FFT result (complex numbers).
-    Returns (np.ndarray): The IFFT of the input.
+    The function determines the start and end indices based on log patterns, extracts the real and imaginary
+    components from the log, and converts them into floating-point numbers. For vectorized data, the strings
+    are split into 8-character chunks (in reverse order) before conversion.
     """
-    n = len(x_in)
-    # 'x_out' will be the final output buffer, initially empty.
-    x_out = np.zeros(n, dtype=np.complex128)
-    # 'y_in' will be the initial input buffer for fft0.
-    # First, conjugate the input as per the C++ `ifft` logic.
-    y_in = np.conj(np.array(x_in, dtype=np.complex128))
+    import numpy as np
+    start_index, end_index = find_log_pattern_index(file_name)
+    real = []
+    imag = []
 
-    # Call fft0_py_corrected on the conjugated data.
-    # x_out is the designated output, y_in is the designated input (holding conjugated data).
-    # 'eo' starts as False.
-    fft0_py_corrected(n, 1, False, x_out, y_in)
+    try:
+        with open(file_name, 'r') as file:
+            lines = file.readlines()
 
-    # Conjugate the result back as per the C++ `ifft` logic.
-    # No additional 1/N scaling is needed here, as the scaling from `fft_py` is implicitly handled.
-    return np.conj(x_out)
+        if delete_log_files:
+            import os
+            os.remove(file_name)
 
-# Test functions
-def test_fft_ifft_corrected():
-    """
-    Tests the custom FFT and IFFT implementations against NumPy's functions.
-    """
-    # Test with N = 8 (power of 2)
-    N = 8
-    # Create a random complex signal
-    np.random.seed(42) # For reproducibility
-    signal = np.random.rand(N) + 1j * np.random.rand(N)
-    print("Original Signal:")
-    print(signal)
+        # Ensure start and end indexes are within the valid range
+        start_index = max(0, start_index)
+        end_index = min(len(lines), end_index)
 
-    # --- Test Forward FFT ---
-    # Our FFT function (fft_py)
-    fft_result_my = fft_py(signal) # Pass the signal array
+        # Initialize a flag to alternate between real and imag
+        save_to_real = True
+        is_vectorized = False
 
-    # NumPy's FFT (Note: NumPy's fft does not scale by 1/N by default)
-    numpy_fft_result = np.fft.fft(signal)
+        # Process lines within the specified range
+        for i in range(start_index, end_index):
+            if not is_vectorized:
+                if "vsetvli" in lines[i]:
+                    is_vectorized = True
+                    continue
 
-    print("\nMy FFT Result (scaled by 1/N as per C++):")
-    print(fft_result_my)
-    print("\nNumPy FFT Result (unscaled):")
-    print(numpy_fft_result)
+                if "c.flw" in lines[i] or "flw" in lines[i]:
+                    words = lines[i].split()
+                    if len(words) > 1:
+                        if "c.flw" in lines[i]:
+                            index_of_cflw = words.index("c.flw")
+                        else:
+                            index_of_cflw = words.index("flw")
+                        if index_of_cflw > 0:
+                            if save_to_real:
+                                real.append(words[index_of_cflw - 1])
+                                save_to_real = False
+                            else:
+                                imag.append(words[index_of_cflw - 1])
+                                save_to_real = True
 
-    # Comparison: My FFT result should be NumPy's FFT result divided by N.
-    assert np.allclose(fft_result_my, numpy_fft_result / N, atol=1e-9), \
-        "FFT results do not match NumPy's FFT (after accounting for 1/N scaling)!"
-    print("\nFFT Test Passed: My FFT results match NumPy's (scaled by 1/N).")
+            else:
+                if "vle32.v" in lines[i]:
+                    words = lines[i].split()
+                    index_of_cflw = words.index("vle32.v")
+                    if save_to_real:
+                        real.append(words[index_of_cflw - 1])
+                        save_to_real = False
+                    else:
+                        imag.append(words[index_of_cflw - 1])
+                        save_to_real = True
 
-    # --- Test Inverse FFT ---
-    # Perform IFFT using my function, using the result from my FFT.
-    # According to the C++ code's scaling and properties:
-    # my_fft(signal) -> X_hat = DFT_true(signal) / N
-    # my_ifft(X_hat) -> Should recover the original signal.
-    ifft_result_my = ifft_py(fft_result_my)
+        # return hex_to_float(real), hex_to_float(imag)
+        if (is_vectorized):
+            realVal = []
+            imagVal = []
 
-    print("\nMy IFFT Result (from my FFT result):")
-    print(ifft_result_my)
+            for i in range(len(real)):
+                realVector = real[i]
+                imagVector = imag[i]
 
-    # Check if IFFT recovers the original signal
-    assert np.allclose(ifft_result_my, signal, atol=1e-9), \
-        "IFFT did not recover the original signal!"
-    print("\nIFFT Test Passed: My IFFT correctly recovers the original signal.")
+                # split the strings into 8 bit chunks
+                realVector = [realVector[i:i+8]
+                              for i in range(0, len(realVector), 8)]
+                imagVector = [imagVector[i:i+8]
+                              for i in range(0, len(imagVector), 8)]
 
-    # --- Additional Test: My IFFT with NumPy's FFT result ---
-    # If we feed NumPy's unscaled FFT result (DFT_true(signal)) into my IFFT,
-    # my IFFT calculates conj(DFT_true(conj(DFT_true(signal)))).
-    # Since DFT_true(conj(X)) = conj(IDFT_true(X)) * N,
-    # this becomes conj(conj(IDFT_true(DFT_true(signal))) * N)
-    # = IDFT_true(DFT_true(signal)) * N = signal * N.
-    ifft_result_my_from_numpy = ifft_py(numpy_fft_result)
-    print("\nMy IFFT Result (from NumPy FFT result, expecting original_signal * N):")
-    print(ifft_result_my_from_numpy)
-    assert np.allclose(ifft_result_my_from_numpy, signal * N, atol=1e-9), \
-        "My IFFT from NumPy FFT result does not match expected (signal * N)!"
-    print("\nIFFT from NumPy FFT test passed (expected signal * N).")
+                # reverse the order of the chunks
+                realVector = realVector[::-1]
+                imagVector = imagVector[::-1]
 
-    # --- Final check: NumPy's IFFT consistency ---
-    numpy_ifft_result = np.fft.ifft(numpy_fft_result)
-    print("\nNumPy IFFT Result (from NumPy FFT result):")
-    print(numpy_ifft_result)
-    assert np.allclose(numpy_ifft_result, signal, atol=1e-9), \
-        "NumPy IFFT failed to recover original signal (internal check)!"
-    print("\nNumPy IFFT internal consistency check passed.")
+                realVal.extend(realVector)
+                imagVal.extend(imagVector)
 
-# Run the tests
-if __name__ == "__main__":
-    test_fft_ifft_corrected()
+            real = realVal
+            imag = imagVal
+        return np.array(hex_to_float(real)) + 1j * np.array(hex_to_float(imag))
+
+    except FileNotFoundError:
+        print(f"The file {file_name} does not exist.")
+        return real, imag
+
+
+
+
+# change real/imag from here to any data you want
+real = [10,1,1,1,1,1,1,99]
+imag = [20,1,1,1, 1, 1, 1, 20]
+
+real_assembly_form = format_array_as_data_string(real)
+imag_assembly_form = format_array_as_data_string(imag)
+
+data_output_file = "./fft_data.s"
+
+with open(data_output_file, "w") as f:
+    f.write(".align 4\n size:\n\t.word " + str(len(real)) + "\n")
+    f.write(".align 4\n log2size:\n\t.word " + str(int(math.log2(len(real)))) + "\n")
+    f.write(".align 4\n fft_input_real:\n")
+    for i in range(len(real_assembly_form)):
+        f.write(real_assembly_form[i]+ "\n")
+    f.write(".align 4\n fft_input_imag:\n")
+    for i in range(len(imag_assembly_form)):
+        f.write(imag_assembly_form[i]+ "\n")
+
+
+logfile = "./veer/tempFiles/logV.txt"
+
+data  = process_file(logfile)
+
+numpy_fft_data = np.fft.fft(np.array(real) + 1j * np.array(imag))
+my_fft_to_compare = data.astype(np.complex64, copy=False)
+
+print("Data from log file:")
+print(my_fft_to_compare)
+print("Numpy FFT data:")
+print(numpy_fft_data)
+
+# max_abs_difference = np.max(np.abs(my_fft_to_compare - numpy_fft_data))
+# mean_squared_error = np.mean(np.abs(my_fft_to_compare - numpy_fft_data)**2)
+
+# print(f"    Max Absolute Difference: {max_abs_difference:.3e}")
+# print(f"    Mean Squared Error: {mean_squared_error:.3e}")
+
+# for i in range(8):
+#     print(f"numpy_fft_data[{i}]: {numpy_fft_data[i]}")
+#     print(f"riscv_fft_data[{i}]: {my_fft_to_compare[i]}")
