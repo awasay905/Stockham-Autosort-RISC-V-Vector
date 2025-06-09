@@ -201,20 +201,6 @@ _finish:
 .section .data
 
 .align 4
- size:
-	.word 8
-.align 4
- log2size:
-	.word 3
-.align 4
- fft_input_real:
-.float 10.000000000000, 1,1,1,1,1,1,99
-.align 4
- fft_input_imag:
-.float 20.000000000000, 1.000000000000, 1.000000000000, 1.000000000000,  1.000000000000, 1.000000000000, 1.000000000000, 20.000000000000
-
-
-.align 4
 y_real:
     .space 1024  # Reserve space for output data real
 

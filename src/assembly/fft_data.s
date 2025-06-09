@@ -1,0 +1,18 @@
+.section .data
+.global size 
+.global log2size 
+.global fft_input_real 
+.global fft_input_imag
+
+.align 4
+ size:
+	.word 8
+.align 4
+ log2size:
+	.word 3
+.align 4
+ fft_input_real:
+.float 10.000000000000, 1.000000000000, 1.000000000000, 1.000000000000,  1.000000000000, 1.000000000000, 1.000000000000, 99.000000000000
+.align 4
+ fft_input_imag:
+.float 20.000000000000, 1.000000000000, 1.000000000000, 1.000000000000,  1.000000000000, 1.000000000000, 1.000000000000, 20.000000000000

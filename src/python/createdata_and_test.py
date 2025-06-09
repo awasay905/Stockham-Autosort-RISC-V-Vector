@@ -200,9 +200,10 @@ imag = [20,1,1,1, 1, 1, 1, 20]
 real_assembly_form = format_array_as_data_string(real)
 imag_assembly_form = format_array_as_data_string(imag)
 
-data_output_file = "./fft_data.s"
+data_output_file = "./src/assembly/fft_data.s"
 
 with open(data_output_file, "w") as f:
+    f.write(".section .data\n.global size \n.global log2size \n.global fft_input_real \n.global fft_input_imag\n\n")
     f.write(".align 4\n size:\n\t.word " + str(len(real)) + "\n")
     f.write(".align 4\n log2size:\n\t.word " + str(int(math.log2(len(real)))) + "\n")
     f.write(".align 4\n fft_input_real:\n")

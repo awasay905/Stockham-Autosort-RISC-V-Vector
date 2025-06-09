@@ -13,11 +13,11 @@ cleanV:
 	rm -f $(TEMPPATH)/logV.txt  $(TEMPPATH)/programV.hex  $(TEMPPATH)/TESTV.dis  $(TEMPPATH)/TESTV.exe
 	
 compileV:
-	$(GCC_PREFIX)-gcc $(ABI) -lgcc -T$(LINK) -o  $(TEMPPATH)/TESTV.exe $(CODEFOLDER)/twiddle_factors.s $(CODEFOLDER)/Vectorized.s -nostartfiles -lm
+	$(GCC_PREFIX)-gcc $(ABI) -lgcc -T$(LINK) -o  $(TEMPPATH)/TESTV.exe $(CODEFOLDER)/twiddle_factors.s  $(CODEFOLDER)/fft_data.s $(CODEFOLDER)/Vectorized.s -nostartfiles -lm
 	
 executeV:
 	-whisper -x  $(TEMPPATH)/programV.hex -s 0x80000000 --tohost 0xd0580000 -f  $(TEMPPATH)/logV.txt --configfile ./veer/whisper.json
-	/usr/bin/python /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/python/test.py
+	/usr/bin/python /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/python/createdata_and_test.py
 
 
 allNV: compileNV executeNV
