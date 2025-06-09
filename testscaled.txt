@@ -1,0 +1,170 @@
+/usr/bin/python /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/python/test_fft.py
+Starting FFT Test Suite with tolerance: 1.0e-04
+------------------------------------------------------------
+
+--- Testing FFT Size: 2 (2^1) ---
+  Generated assembly data for size 2 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 8 data points from log.
+  Comparison Results for Size: 2:
+    Max Absolute Difference:   0.000e+00
+    Mean Squared Error:        0.000e+00
+    VeeR Cycles Taken:         135
+  PASS
+
+--- Testing FFT Size: 4 (2^2) ---
+  Generated assembly data for size 4 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 8 data points from log.
+  Comparison Results for Size: 4:
+    Max Absolute Difference:   2.384e-07
+    Mean Squared Error:        1.710e-14
+    VeeR Cycles Taken:         268
+  PASS
+
+--- Testing FFT Size: 8 (2^3) ---
+  Generated assembly data for size 8 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 8 data points from log.
+  Comparison Results for Size: 8:
+    Max Absolute Difference:   1.201e-07
+    Mean Squared Error:        5.246e-15
+    VeeR Cycles Taken:         501
+  PASS
+
+--- Testing FFT Size: 16 (2^4) ---
+  Generated assembly data for size 16 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 16 data points from log.
+  Comparison Results for Size: 16:
+    Max Absolute Difference:   1.794e-07
+    Mean Squared Error:        5.889e-15
+    VeeR Cycles Taken:         987
+  PASS
+
+--- Testing FFT Size: 32 (2^5) ---
+  Generated assembly data for size 32 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 32 data points from log.
+  Comparison Results for Size: 32:
+    Max Absolute Difference:   1.201e-07
+    Mean Squared Error:        3.753e-15
+    VeeR Cycles Taken:         2000
+  PASS
+
+--- Testing FFT Size: 64 (2^6) ---
+  Generated assembly data for size 64 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 64 data points from log.
+  Comparison Results for Size: 64:
+    Max Absolute Difference:   1.333e-07
+    Mean Squared Error:        2.581e-15
+    VeeR Cycles Taken:         4130
+  PASS
+
+--- Testing FFT Size: 128 (2^7) ---
+  Generated assembly data for size 128 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 128 data points from log.
+  Comparison Results for Size: 128:
+    Max Absolute Difference:   7.451e-08
+    Mean Squared Error:        9.808e-16
+    VeeR Cycles Taken:         8620
+  PASS
+
+--- Testing FFT Size: 256 (2^8) ---
+  Generated assembly data for size 256 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 256 data points from log.
+  Comparison Results for Size: 256:
+    Max Absolute Difference:   7.029e-08
+    Mean Squared Error:        7.549e-16
+    VeeR Cycles Taken:         18082
+  PASS
+
+--- Testing FFT Size: 512 (2^9) ---
+  Generated assembly data for size 512 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 512 data points from log.
+  Comparison Results for Size: 512:
+    Max Absolute Difference:   6.303e-08
+    Mean Squared Error:        4.542e-16
+    VeeR Cycles Taken:         37992
+  PASS
+
+--- Testing FFT Size: 1024 (2^10) ---
+  Generated assembly data for size 1024 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 1024 data points from log.
+  Comparison Results for Size: 1024:
+    Max Absolute Difference:   3.960e-08
+    Mean Squared Error:        2.266e-16
+    VeeR Cycles Taken:         79806
+  PASS
+
+--- Testing FFT Size: 2048 (2^11) ---
+  Generated assembly data for size 2048 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 2048 data points from log.
+  Comparison Results for Size: 2048:
+    Max Absolute Difference:   3.643e-08
+    Mean Squared Error:        1.333e-16
+    VeeR Cycles Taken:         167444
+  PASS
+
+--- Testing FFT Size: 4096 (2^12) ---
+  Generated assembly data for size 4096 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 4096 data points from log.
+  Comparison Results for Size: 4096:
+    Max Absolute Difference:   3.032e-08
+    Mean Squared Error:        7.091e-17
+    VeeR Cycles Taken:         350762
+  PASS
+
+--- Testing FFT Size: 8192 (2^13) ---
+  Generated assembly data for size 8192 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 8192 data points from log.
+  Comparison Results for Size: 8192:
+    Max Absolute Difference:   2.107e-08
+    Mean Squared Error:        3.943e-17
+    VeeR Cycles Taken:         733504
+  PASS
+
+--- Testing FFT Size: 16384 (2^14) ---
+  Generated assembly data for size 16384 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 16384 data points from log.
+  Comparison Results for Size: 16384:
+    Max Absolute Difference:   1.666e-08
+    Mean Squared Error:        2.084e-17
+    VeeR Cycles Taken:         1531222
+  PASS
+
+--- Testing FFT Size: 32768 (2^15) ---
+  Generated assembly data for size 32768 at /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/assembly/fft_data.s.
+  Running 'make allV' in /home/ubuntu/Stockham-Autosort-RISC-V-Vector...
+  Simulator run complete.
+  Extracted 32768 data points from log.
+  Comparison Results for Size: 32768:
+    Max Absolute Difference:   9.436e-02
+    Mean Squared Error:        5.040e-04
+    VeeR Cycles Taken:         3191148
+  FAIL: Max Absolute Difference 9.436e-02 exceeds tolerance 1.0e-04.
+------------------------------------------------------------
+Stopping test suite due to failure.

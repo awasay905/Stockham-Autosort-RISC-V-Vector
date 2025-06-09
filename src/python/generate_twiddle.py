@@ -1,7 +1,7 @@
 import math
 
 # Define the size of the precomputed twiddle factor table
-TWIDDLE_TABLE_SIZE = 8192
+TWIDDLE_TABLE_SIZE = 65536
 
 # Output file name
 OUTPUT_FILENAME = "./src/assembly/twiddle_factors.s"

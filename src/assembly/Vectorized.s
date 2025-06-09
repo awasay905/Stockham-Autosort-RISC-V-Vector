@@ -36,6 +36,9 @@ _start:
 #    - a0: Base address of output data real
 #    - a1: Base address of output data imag
 stockham_fft:
+    lui   t0, %hi(0x3f000000) # Load upper 20 bits of 0.5f
+    addi  t0, t0, %lo(0x3f000000) # Add lower 12 bits
+    fmv.w.x f0, t0              # Move integer representation to f0 (f0 will hold 0.5f)
 
     li t0, 1                # s = 1 
     srai t1, a0, 1          # m = n/2
@@ -44,7 +47,7 @@ stockham_fft:
     stage_loop:
         bge s0, a1, stage_loop_end
 
-        li t2, 8192             # t2 = 8192, Twiddle table size
+        li t2, 65536             # t2 = 65536, Twiddle table size
         div t2, t2, t0          # t2 = twiddle scale
         slli t2, t2, 2          # t2 = twiddle scale * 4 (for byte addressing) 
 
@@ -136,7 +139,31 @@ stockham_fft:
         mv a4, s7
         mv s7, a3
         mv a3, a5
-        mv a5, s7               
+        mv a5, s7         
+
+        # Divide by N here the entire input
+        li s1, 0                #  i = 0
+        mv s3, a2
+        mv s4, a3 
+        vsetvli s2, a0, e32, m1, ta, ma
+        slli s5, s2, 2        # VLEN*4 to increment address
+        scale_loop:
+        bge s1, a0, scale_loop_end
+
+        vle32.v v4, 0(s3)
+        vle32.v v8, 0(s4)
+        vfmul.vf v4, v4, f0
+        vfmul.vf v8, v8, f0
+
+        vse32.v v4, 0(s3)
+        vse32.v v8, 0(s4)
+
+        add s3, s3, s5
+        add s4, s4, s5
+        add s1, s1, s2
+        j scale_loop
+        scale_loop_end:
+
         j stage_loop
     stage_loop_end:
 

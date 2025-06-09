@@ -341,7 +341,7 @@ def run_fft_test_suite(
             return # Stop on log processing failure
 
         # 6. Compare with NumPy FFT
-        numpy_fft_output = np.fft.fft(input_complex_numpy)
+        numpy_fft_output = (np.fft.fft(input_complex_numpy) / current_size).astype(np.complex64)
 
         if len(sim_fft_output) > len(numpy_fft_output):
             sim_fft_output=sim_fft_output[:len(numpy_fft_output)]
@@ -380,7 +380,7 @@ if __name__ == "__main__":
     # Adjust parameters as needed
     run_fft_test_suite(
         min_log2_size=1,  # Smallest size: 2^2 = 4
-        max_log2_size=15, # Largest size: 2^10 = 1024 (adjust based on simulation time)
+        max_log2_size=16, # Largest size: 2^10 = 1024 (adjust based on simulation time)
         tolerance=1e-4,   # Adjust this tolerance based on your expected floating-point precision
         target_dir="/home/ubuntu/Stockham-Autosort-RISC-V-Vector",
         data_output_file_relative="./src/assembly/fft_data.s", # Path relative to target_dir
