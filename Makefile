@@ -32,3 +32,6 @@ compileNV:
 	
 executeNV:
 	whisper -x  $(TEMPPATH)/programNV.hex -s 0x80000000 --tohost 0xd0580000 -f  $(TEMPPATH)/logNV.txt --configfile ./veer/whisper.json
+
+test:
+	/usr/bin/python /home/ubuntu/Stockham-Autosort-RISC-V-Vector/src/python/test_fft.py
