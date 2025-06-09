@@ -197,13 +197,3 @@ _finish:
     .rept 100
         nop
     .endr
-
-.section .data
-
-.align 4
-y_real:
-    .space 1024  # Reserve space for output data real
-
-.align 4
-y_imag:
-    .space 1024  # Reserve space for output data imag

@@ -45,58 +45,79 @@ def hex_to_float(hex_array: list[str]) -> list[float]:
 
 def find_log_pattern_index(file_name: str) -> list[int]:
     """
-    Locate the starting line indices where a specific hexadecimal log pattern occurs twice in a file.
+    Finds the starting line indices of the first two consecutive occurrences
+    of the required values in the 7th column.
 
-    The function searches for the pattern defined by a set of required hexadecimal values.
+    Args:
+        file_name (str): The path to the input file.
 
-    Parameters
-    ----------
-    file_name : str
-        Path to the log file.
-
-    Returns
-    -------
-    list of int
-        A list containing up to two line indices where the pattern starts.
+    Returns:
+        list: A list of line indices (0-based) where the full consecutive pattern
+              was found to start. Returns up to two indices.
     """
-    with open(file_name, 'r') as file:
-        lines = file.readlines()
+    try:
+        with open(file_name, 'r') as file:
+            lines = file.readlines()
+    except FileNotFoundError:
+        print(f"Error: File '{file_name}' not found.")
+        return []
+    except Exception as e:
+        print(f"An error occurred while reading the file: {e}")
+        return []
 
-    # List of required values in the 7th column (index 6)
-    # These values signal the start/end of the data section in your log.
+    # List of required values in the 7th column (must be consecutive)
     required_values = ["00000123", "00000456"]
-    found_values = []  # List to track when we find the required values
+
     pattern_indices = []  # To store the line index when the full pattern is found
-    current_pattern_start = None  # To store where a potential pattern starts
+    
+    # State variables:
+    # `expecting_next_value` is True if we just found required_values[0]
+    # and are now looking for required_values[1] on the very next line.
+    expecting_next_value = False 
+    current_pattern_start = None # Stores the line index where required_values[0] was found
 
     for i, line in enumerate(lines):
         columns = line.split()
-        if len(columns) > 6:  # Check if there are enough columns
-            value = columns[6]  # Get the 7th column (index 6)
-            if value in required_values:
-                # If we find the first required value and haven't started tracking, mark it.
-                if current_pattern_start is None and value == required_values[0]:
+
+        # Ensure there are enough columns to check the 7th one (index 6)
+        if len(columns) > 6:
+            value = columns[6]
+
+            if expecting_next_value:
+                # We are in a state where we just found required_values[0]
+                # Now we need to check if the current line has required_values[1]
+                if value == required_values[1]:
+                    # Success! We found the consecutive pattern
+                    pattern_indices.append(current_pattern_start)
+                    # Reset for the next search
+                    expecting_next_value = False
+                    current_pattern_start = None
+                elif value == required_values[0]:
+                    # If we find required_values[0] again, it means
+                    # the previous sequence was broken, and a new one starts here.
                     current_pattern_start = i
-                # Add the found value to our tracker
-                found_values.append(value)
+                    # expecting_next_value remains True, as we are still waiting for required_values[1]
+                else:
+                    # The sequence was broken (neither part of the pattern was found)
+                    # Reset state and look for the beginning of a new pattern
+                    expecting_next_value = False
+                    current_pattern_start = None
+            else:
+                # We are in a state where we are looking for the start of the pattern (required_values[0])
+                if value == required_values[0]:
+                    current_pattern_start = i
+                    expecting_next_value = True # Transition to the state of expecting the next value
+                # If it's not required_values[0], we do nothing and keep looking.
+        else:
+            # If a line doesn't have enough columns, it breaks any potential sequence.
+            expecting_next_value = False
+            current_pattern_start = None
 
-            # If we found all the required values (e.g., both 00000123 and 00000456), save the index and reset
-            # Using 'set' ensures we only care if both values are present, regardless of order or duplicates in 'found_values'
-            if all(val in found_values for val in required_values) and current_pattern_start is not None:
-                pattern_indices.append(current_pattern_start)
-                found_values = []  # Reset for the next pattern
-                current_pattern_start = None  # Reset pattern start
+        # Stop if we've found the pattern twice
+        if len(pattern_indices) == 2:
+            break
 
-            # If we've found the pattern twice, we can stop
-            if len(pattern_indices) == 2:
-                break
-    
-    if len(pattern_indices) < 2:
-        raise ValueError(f"Could not find both log patterns ('{required_values[0]}' and '{required_values[1]}') in {file_name}. Found only {len(pattern_indices)} patterns.")
-
-    # Return the line indices where the pattern was found twice
     return pattern_indices
-
 
 def process_file(file_name: str, delete_log_files: bool = False) -> np.ndarray:
     """
@@ -258,6 +279,7 @@ def run_fft_test_suite(
         try:
             with open(full_data_output_path, "w") as f:
                 f.write(".section .data\n.global size \n.global log2size \n.global fft_input_real \n.global fft_input_imag\n\n")
+                f.write(".global y_real \n.global y_imag\n\n")
                 f.write(".align 4\n size:\n\t.word " + str(current_size) + "\n")
                 f.write(".align 4\n log2size:\n\t.word " + str(log2_size) + "\n")
                 f.write(".align 4\n fft_input_real:\n")
@@ -266,6 +288,9 @@ def run_fft_test_suite(
                 f.write(".align 4\n fft_input_imag:\n")
                 for line in imag_assembly_form:
                     f.write(line + "\n")
+                f.write("\n\n")
+                f.write(f".align 4\ny_real:\n.space {current_size*4}\n\n")
+                f.write(f".align 4\ny_imag:\n.space {current_size*4}\n\n")
             print(f"  Generated assembly data for size {current_size} at {full_data_output_path}.")
         except IOError as e:
             print(f"ERROR: Could not write to {full_data_output_path}: {e}")
@@ -351,7 +376,7 @@ if __name__ == "__main__":
     # Adjust parameters as needed
     run_fft_test_suite(
         min_log2_size=1,  # Smallest size: 2^2 = 4
-        max_log2_size=10, # Largest size: 2^10 = 1024 (adjust based on simulation time)
+        max_log2_size=15, # Largest size: 2^10 = 1024 (adjust based on simulation time)
         tolerance=1e-4,   # Adjust this tolerance based on your expected floating-point precision
         target_dir="/home/ubuntu/Stockham-Autosort-RISC-V-Vector",
         data_output_file_relative="./src/assembly/fft_data.s", # Path relative to target_dir
