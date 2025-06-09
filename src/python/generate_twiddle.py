@@ -4,7 +4,7 @@ import math
 TWIDDLE_TABLE_SIZE = 8192
 
 # Output file name
-OUTPUT_FILENAME = "twiddle_factors.s"
+OUTPUT_FILENAME = "./src/assembly/twiddle_factors.s"
 
 # Number of floating-point values per line in the assembly output for readability
 FLOATS_PER_LINE = 8 
@@ -29,6 +29,7 @@ def generate_assembly_data(data_list, label, f):
     """
     Generates assembly .float directives for a given list of data.
     """
+    f.write(f".global twiddle_real\n.global twiddle_imag\n")
     f.write(f".align 4\n")
     f.write(f"{label}:\n")
     

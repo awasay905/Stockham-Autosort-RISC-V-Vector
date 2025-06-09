@@ -13,9 +13,7 @@ cleanV:
 	rm -f $(TEMPPATH)/logV.txt  $(TEMPPATH)/programV.hex  $(TEMPPATH)/TESTV.dis  $(TEMPPATH)/TESTV.exe
 	
 compileV:
-	$(GCC_PREFIX)-gcc $(ABI) -lgcc -T$(LINK) -o  $(TEMPPATH)/TESTV.exe $(CODEFOLDER)/Vectorized.s -nostartfiles -lm
-	$(GCC_PREFIX)-objcopy -O verilog  $(TEMPPATH)/TESTV.exe  $(TEMPPATH)/programV.hex
-	$(GCC_PREFIX)-objdump -S  $(TEMPPATH)/TESTV.exe >  $(TEMPPATH)/TESTV.dis
+	$(GCC_PREFIX)-gcc $(ABI) -lgcc -T$(LINK) -o  $(TEMPPATH)/TESTV.exe $(CODEFOLDER)/twiddle_factors.s $(CODEFOLDER)/Vectorized.s -nostartfiles -lm
 	
 executeV:
 	-whisper -x  $(TEMPPATH)/programV.hex -s 0x80000000 --tohost 0xd0580000 -f  $(TEMPPATH)/logV.txt --configfile ./veer/whisper.json
