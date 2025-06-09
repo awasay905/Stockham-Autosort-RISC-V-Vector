@@ -1,0 +1,108 @@
+{
+    "runs": [
+        {
+            "timestamp": "2025-06-09 22:14:23",
+            "code_hash": "f95e873e93a6fb7178291dcaa4ddab47d91c0f96b043c6c14a36f4fb83c68202",
+            "code_content": "#define STDOUT 0xd0580000\n\n.section .text\n.global _start\n_start:\n## START YOUR CODE HERE\n    lw a0, size             # Load size of FFT from data section\n    lw a1, log2size         # Load log2 of size from data section\n    la a2, fft_input_real   # Load base address of input data real\n    la a3, fft_input_imag   # Load base address of input data imag\n    la a4, y_real           # Load base address of output data real\n    la a5, y_imag           # Load base address of output data imag\n    la a6, twiddle_real     # Load base address of twiddle factors real\n    la a7, twiddle_imag     # Load base address of twiddle factors imag\n    call stockham_fft\n\n    lw a2, size\n    call printToLogVectorized\n\n    j _finish\n\n\n# Function: stockham_fft\n# Implements the Stockham FFT algorithm. DIT. Assumes data is \n# segemnted into real and imaginary parts.\n# Input:\n#    - a0: Input size N \n#    - a1: Log2 of N\n#    - a2: Base address of input data real\n#    - a3: Base address of input data imag\n#    - a4: Base address of y array real\n#    - a5: Base address of y array imag\n#    - a6: Base address of twiddle factors real\n#    - a7: Base address of twiddle factors imag\n# Returns:\n#    - a0: Base address of output data real\n#    - a1: Base address of output data imag\nstockham_fft:\n    lui   t0, %hi(0x3f000000) # Load upper 20 bits of 0.5f\n    addi  t0, t0, %lo(0x3f000000) # Add lower 12 bits\n    fmv.w.x f0, t0              # Move integer representation to f0 (f0 will hold 0.5f)\n\n    li t0, 1                # s = 1 \n    srai t1, a0, 1          # m = n/2\n\n    li s0, 0                # s0 = stage = 0\n    stage_loop:\n        bge s0, a1, stage_loop_end\n\n        li t2, 65536             # t2 = 65536, Twiddle table size\n        div t2, t2, t0          # t2 = twiddle scale\n        slli t2, t2, 2          # t2 = twiddle scale * 4 (for byte addressing) \n\n        li s1, 0                # s1 = p \n        inner_p_loop:\n            bge s1, t1, inner_p_loop_end\n            vsetvli t3, t0, e32, m1, ta, ma\n\n            mul t4, t0, s1      # t4 = sp = s * p\n            mul t5, t0, t1      # t5 = m * s\n            add t5, t5, t4      # t5 = spm\n            li s2, 0            # q = 0\n            innermost_q_loop:\n                bge s2, t0, innermost_q_loop_end\n\n                # s3 and s4 will be idx_a and idx_b\n                add s3, s2, t4\n                add s4, s2, t5\n                slli s3, s3, 2\n                slli s4, s4, 2\n\n                # Calculte twiddle base\n                mul s5, s2, t2              # q_start * twiddle * 4. t2 has twiddle sacle*4, s2 has curr q\n                add s6, a6, s5\n                add s7, a7, s5\n                # Load twiddle factors\n                vlse32.v v4, 0(s6), t2    # wq_real;\n                vlse32.v v8, 0(s7), t2    # wq_imag;\n\n                # Load input data from idx a\n                add s6, s3, a2   # a2 is curr x base\n                add s7, s3, a3  # a2 is curr x imag\n                vle32.v v12, 0(s6)  # a_real\n                vle32.v v16, 0(s7)  # a_imag;\n\n                # Load input data from idx b\n                add s6, s4, a2   # a2 is curr x base\n                add s7, s4, a3  # a2 is curr x imag\n                vle32.v v20, 0(s6)  # b_real_raw;\n                vle32.v v24, 0(s7)  # b_imag_raw;\n\n\n\n                vfmul.vv v28, v24, v8\n                vfmul.vv v8, v20, v8\n                vfmsac.vv v28, v20, v4   # b_wq_re\n                vfmacc.vv v8, v24, v4    # b_wq_im\n\n                vfadd.vv v4, v12, v28\n                vfadd.vv v20, v16, v8\n\n                vfsub.vv v24, v12, v28\n                vfsub.vv v12, v16, v8\n\n                # Calculate output index s3 and s4 will have y0 and y1\n                add s3, s2, t4   \n                add s3, s3, t4    # s3 = q + 2*sp\n                add s4, s3, t0    # s4 = q + 2*sp + s\n                slli s3, s3, 2\n                slli s4, s4, 2\n\n                add s5, s3, a4\n                add s6, s3, a5\n                # now s3 have y_re y0\n                vse32.v v4, 0(s5)\n                vse32.v v20, 0(s6)\n\n                add s5, s4, a4 \n                add s6, s4, a5\n                vse32.v v24, 0(s5)\n                vse32.v v12, 0(s6)\n                \n\n                add s2, s2, t3  # Increment q by VLEN\n                j innermost_q_loop\n            innermost_q_loop_end:\n\n            addi s1, s1, 1\n            j inner_p_loop\n        inner_p_loop_end:\n        \n\n        srai t1, t1, 1          # m = m/2\n        slli t0, t0, 1          # s = s*2\n        addi s0, s0, 1          # Increment stage\n        # Swap Pointers\n        mv s7, a2 \n        mv a2, a4\n        mv a4, s7\n        mv s7, a3\n        mv a3, a5\n        mv a5, s7         \n\n        # Divide by N here the entire input\n        li s1, 0                #  i = 0\n        mv s3, a2\n        mv s4, a3 \n        vsetvli s2, a0, e32, m1, ta, ma\n        slli s5, s2, 2        # VLEN*4 to increment address\n        scale_loop:\n        bge s1, a0, scale_loop_end\n\n        vle32.v v4, 0(s3)\n        vle32.v v8, 0(s4)\n        vfmul.vf v4, v4, f0\n        vfmul.vf v8, v8, f0\n\n        vse32.v v4, 0(s3)\n        vse32.v v8, 0(s4)\n\n        add s3, s3, s5\n        add s4, s4, s5\n        add s1, s1, s2\n        j scale_loop\n        scale_loop_end:\n\n        j stage_loop\n    stage_loop_end:\n\n\n\n    mv a0, a2                # Set output base address real\n    mv a1, a3                # Set output base address imag\n    ret\n\n\n## END YOU CODE HERE\n\n# Function: print\n# Logs values from array in a0 into registers v1 for debugging and output.\n# from using the log file.\n# Inputs:\n#   - a0: Base address of array real\n#   - a1: Base address of array imag\n#   - a2: Size of array\n# Clobbers: t0,t1, t2,t3 ft0, ft1.\nprintToLogVectorized:        \n    addi sp, sp, -4\n    sw a0, 0(sp)\n\n    li t0, 0x123                 # Pattern for help in python script\n    li t0, 0x456                 # Pattern for help in python script\n\tli t0, 0\t\t                # load i = 0\n    printloop:\n        vsetvli t3, a2, e32           # Set VLEN based on a2\n        slli t4, t3, 2                # Compute VLEN * 4 for address increment\n\n        vle32.v v1, (a0)              # Load real[i] into v1\n        vle32.v v1, (a1)              # Load real[i] into v1\n        add a0, a0, t4                # Increment pointer for real[] by VLEN * 4\n        add a1, a1, t4                # Increment pointer for real[] by VLEN * 4\n        add t0, t0, t3                # Increment index\n\n        bge t0, a2, endPrintLoop      # Exit loop if i >= size\n        j printloop                   # Jump to start of loop\n    endPrintLoop:\n    li t0, 0x123                    # Pattern for help in python script\n    li t0, 0x456                    # Pattern for help in python script\n\t\n    lw a0, 0(sp)\n    addi sp, sp, 4\n\n\tjr ra\n\n\n# Function: _finish\n# VeeR Related function which writes to to_host which stops the simulator\n_finish:\n    li x3, 0xd0580000\n    addi x5, x0, 0xff\n    sb x5, 0(x3)\n    beq x0, x0, _finish\n\n    .rept 100\n        nop\n    .endr\n",
+            "results_per_size": {
+                "2": {
+                    "max_abs_diff": 0.0,
+                    "mean_squared_error": 0.0,
+                    "cycles": 135,
+                    "status": "PASS"
+                },
+                "4": {
+                    "max_abs_diff": 2.388837865275353e-07,
+                    "mean_squared_error": 1.9595436384634016e-14,
+                    "cycles": 268,
+                    "status": "PASS"
+                },
+                "8": {
+                    "max_abs_diff": 1.3328003749250113e-07,
+                    "mean_squared_error": 5.551115123125783e-15,
+                    "cycles": 501,
+                    "status": "PASS"
+                },
+                "16": {
+                    "max_abs_diff": 1.0745380149674385e-07,
+                    "mean_squared_error": 3.3072503069497827e-15,
+                    "cycles": 987,
+                    "status": "PASS"
+                },
+                "32": {
+                    "max_abs_diff": 1.3328003749250113e-07,
+                    "mean_squared_error": 5.1657693422337e-15,
+                    "cycles": 2000,
+                    "status": "PASS"
+                },
+                "64": {
+                    "max_abs_diff": 1.0745380149674385e-07,
+                    "mean_squared_error": 2.029722393374141e-15,
+                    "cycles": 4130,
+                    "status": "PASS"
+                },
+                "128": {
+                    "max_abs_diff": 9.424321830774485e-08,
+                    "mean_squared_error": 1.4269575486028645e-15,
+                    "cycles": 8620,
+                    "status": "PASS"
+                },
+                "256": {
+                    "max_abs_diff": 6.388221174345358e-08,
+                    "mean_squared_error": 7.518505038235028e-16,
+                    "cycles": 18082,
+                    "status": "PASS"
+                },
+                "512": {
+                    "max_abs_diff": 6.143906154658885e-08,
+                    "mean_squared_error": 4.550333797985691e-16,
+                    "cycles": 37992,
+                    "status": "PASS"
+                },
+                "1024": {
+                    "max_abs_diff": 4.470348358154297e-08,
+                    "mean_squared_error": 2.0776725406302762e-16,
+                    "cycles": 79806,
+                    "status": "PASS"
+                },
+                "2048": {
+                    "max_abs_diff": 3.41936196213324e-08,
+                    "mean_squared_error": 1.3642719897624732e-16,
+                    "cycles": 167444,
+                    "status": "PASS"
+                },
+                "4096": {
+                    "max_abs_diff": 2.9802322387695312e-08,
+                    "mean_squared_error": 7.012949511653636e-17,
+                    "cycles": 350762,
+                    "status": "PASS"
+                },
+                "8192": {
+                    "max_abs_diff": 2.3039648079970816e-08,
+                    "mean_squared_error": 3.8634173631792976e-17,
+                    "cycles": 733504,
+                    "status": "PASS"
+                },
+                "16384": {
+                    "max_abs_diff": 1.6023079430763846e-08,
+                    "mean_squared_error": 2.104045272645412e-17,
+                    "cycles": 1531222,
+                    "status": "PASS"
+                },
+                "32768": {
+                    "max_abs_diff": 1.343172518709298e-08,
+                    "mean_squared_error": 1.1321364932897874e-17,
+                    "cycles": 3191148,
+                    "status": "PASS"
+                },
+                "65536": {
+                    "max_abs_diff": 1.1185567965232128e-08,
+                    "mean_squared_error": 5.942635760961209e-18,
+                    "cycles": 6640002,
+                    "status": "PASS"
+                }
+            },
+            "overall_status": "PASS"
+        }
+    ]
+}
