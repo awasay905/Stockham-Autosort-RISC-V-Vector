@@ -14,7 +14,7 @@ _start:
     la a7, twiddle_imag     # Load base address of twiddle factors imag
     call stockham_fft
 
-    li a2, 8
+    lw a2, size
     call printToLogVectorized
 
     j _finish

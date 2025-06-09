@@ -194,24 +194,24 @@ def process_file(file_name: str, delete_log_files: bool = False) -> np.ndarray:
 
 
 # change real/imag from here to any data you want
-real = [10,1,1,1,1,1,1,99]
-imag = [20,1,1,1, 1, 1, 1, 20]
+real = [-3.464429692824, -1.306968446289, 1.683990727203, 4.169108391309,  3.547545173651, 4.752043990383, -2.608885283517, -3.132968008724]
+imag = [-0.361667264722, -4.287705449603, -3.017771235815, -2.836087560137,  2.932867944814, -4.406974029014, -2.736816297475, -4.534302847279]
 
 real_assembly_form = format_array_as_data_string(real)
 imag_assembly_form = format_array_as_data_string(imag)
 
 data_output_file = "./src/assembly/fft_data.s"
 
-with open(data_output_file, "w") as f:
-    f.write(".section .data\n.global size \n.global log2size \n.global fft_input_real \n.global fft_input_imag\n\n")
-    f.write(".align 4\n size:\n\t.word " + str(len(real)) + "\n")
-    f.write(".align 4\n log2size:\n\t.word " + str(int(math.log2(len(real)))) + "\n")
-    f.write(".align 4\n fft_input_real:\n")
-    for i in range(len(real_assembly_form)):
-        f.write(real_assembly_form[i]+ "\n")
-    f.write(".align 4\n fft_input_imag:\n")
-    for i in range(len(imag_assembly_form)):
-        f.write(imag_assembly_form[i]+ "\n")
+# with open(data_output_file, "w") as f:
+#     f.write(".section .data\n.global size \n.global log2size \n.global fft_input_real \n.global fft_input_imag\n\n")
+#     f.write(".align 4\n size:\n\t.word " + str(len(real)) + "\n")
+#     f.write(".align 4\n log2size:\n\t.word " + str(int(math.log2(len(real)))) + "\n")
+#     f.write(".align 4\n fft_input_real:\n")
+#     for i in range(len(real_assembly_form)):
+#         f.write(real_assembly_form[i]+ "\n")
+#     f.write(".align 4\n fft_input_imag:\n")
+#     for i in range(len(imag_assembly_form)):
+#         f.write(imag_assembly_form[i]+ "\n")
 
 
 logfile = "./veer/tempFiles/logV.txt"
@@ -226,12 +226,8 @@ print(my_fft_to_compare)
 print("Numpy FFT data:")
 print(numpy_fft_data)
 
-# max_abs_difference = np.max(np.abs(my_fft_to_compare - numpy_fft_data))
-# mean_squared_error = np.mean(np.abs(my_fft_to_compare - numpy_fft_data)**2)
+max_abs_difference = np.max(np.abs(my_fft_to_compare - numpy_fft_data))
+mean_squared_error = np.mean(np.abs(my_fft_to_compare - numpy_fft_data)**2)
 
-# print(f"    Max Absolute Difference: {max_abs_difference:.3e}")
-# print(f"    Mean Squared Error: {mean_squared_error:.3e}")
-
-# for i in range(8):
-#     print(f"numpy_fft_data[{i}]: {numpy_fft_data[i]}")
-#     print(f"riscv_fft_data[{i}]: {my_fft_to_compare[i]}")
+print(f"    Max Absolute Difference: {max_abs_difference:.3e}")
+print(f"    Mean Squared Error: {mean_squared_error:.3e}")
