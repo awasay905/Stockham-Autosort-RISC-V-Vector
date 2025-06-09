@@ -3,6 +3,8 @@ import numpy as np
 import os
 import subprocess
 import struct # Required for hex_to_float
+import re
+
 
 # --- Reusable functions from your original script ---
 
@@ -306,6 +308,7 @@ def run_fft_test_suite(
             # Optionally, print simulator output for debugging:
             # print("  Simulator Stdout:\n", result.stdout)
             # print("  Simulator Stderr:\n", result.stderr)
+            cycles_taken = int(re.search(r'Retired (\d+) instructions', result.stderr).group(1))
         except subprocess.CalledProcessError as e:
             print(f"ERROR: Simulator command failed for size {current_size}.")
             print(f"  Return Code: {e.returncode}")
@@ -355,9 +358,10 @@ def run_fft_test_suite(
         max_abs_difference = np.max(np.abs(sim_fft_output - numpy_fft_output))
         mean_squared_error = np.mean(np.abs(sim_fft_output - numpy_fft_output)**2)
 
-        print(f"  Comparison Results for Size {current_size}:")
-        print(f"    Max Absolute Difference: {max_abs_difference:.3e}")
-        print(f"    Mean Squared Error: {mean_squared_error:.3e}")
+        print(f"  Comparison Results for Size: {current_size}:")
+        print(f"    Max Absolute Difference:   {max_abs_difference:.3e}")
+        print(f"    Mean Squared Error:        {mean_squared_error:.3e}")
+        print(f"    VeeR Cycles Taken:         {cycles_taken}")
 
         if max_abs_difference > tolerance:
             print(f"  FAIL: Max Absolute Difference {max_abs_difference:.3e} exceeds tolerance {tolerance:.1e}.")
